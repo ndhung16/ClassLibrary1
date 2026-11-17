@@ -18,7 +18,7 @@ namespace ClassLibrary1
                 IdList = IdList + e1.ToString() + "\n";
             }
             MessageBox.Show(IdList);
-            return Result.Succeeded;///
+            return Result.Succeeded;
         }
 
     }
