@@ -1,0 +1,10 @@
+{
+    "profiles": {
+        "Revit 2025": {
+            "commandName": "Executable",
+            "executablePath": "D:\\Program Files\\Autodesk\\Revit 2025\\Revit.exe",
+            "workingDirectory": "D:\\Program Files\\Autodesk\\Revit 2025",
+            "commandLineArgs": ""
+        }
+    }
+}
