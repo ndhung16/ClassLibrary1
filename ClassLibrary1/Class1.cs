@@ -3,7 +3,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using System.Collections.Generic;
 using System.Text;
-namespace ClassLibrary1
+namespace ClassLibrary1 
 
 {
     [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
@@ -11,22 +11,62 @@ namespace ClassLibrary1
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            Document doc = commandData.Application.ActiveUIDocument.Document;
+            UIDocument uidoc = commandData.Application.ActiveUIDocument;
+            Document doc = uidoc.Document;
             FilteredElementCollector collector = new FilteredElementCollector(doc);
+            ElementCategoryFilter filter = new ElementCategoryFilter(BuiltInCategory.OST_StructuralFraming);
 
-            ElementCategoryFilter filter = new ElementCategoryFilter(BuiltInCategory.OST_Materials );
-            IList<Element> matList = collector.WherePasses(filter).WhereElementIsNotElementType().ToElements();
+            IList<Element> wallList = collector.WherePasses(filter).WhereElementIsNotElementType().ToElements();
 
-            StringBuilder result = new StringBuilder ();
-            foreach (Element ele in matList)
+            StringBuilder sb = new StringBuilder();
+            foreach (Element wall in wallList) //for each wall
+            {
+                sb.AppendLine(wall.Name + "::" + wall.Id);
+                foreach (Parameter para in wall.Parameters) //for each parameter
                 {
-                result.AppendLine(ele.Category.Name + "t" + ele .Name + "t" +ele.Id);
+                    sb.Append(this.getParameterInfomation(para, doc, ":")); //print parameter information
+                    sb.AppendLine();
                 }
-            MessageBox.Show("tất cả các material trong projert là : \r\n" + result.ToString());
+                sb.AppendLine();
+            }
+            MessageBox.Show(sb.ToString());
             return Result.Succeeded;
-
         }
-
+        private string getParameterInfomation(Parameter para, Document doc, string seperator)
+        {
+            string defName = para.Definition.Name;
+            switch (para.StorageType)
+            {
+                case StorageType.Double: //if the parameter is a double, use AsValueString() to return the value
+                    return defName + seperator + para.AsValueString();
+                case StorageType.ElementId:
+                    //if the parameter is a element id, its IntegerValue would be either a positive integer or -1
+                    //-1 means an invalid element id
+                    ElementId id = para.AsElementId();
+                    if (id.IntegerValue >= 0) //if IntegerValue is not -1, we can get the parameter by Element.Name
+                        return defName + seperator + doc.GetElement(id).Name;
+                    else //if IntegerValue is -1, print -1 because it is an invalid ElementId
+                        return defName + seperator + id.IntegerValue.ToString();
+                case StorageType.Integer: //if the parameter is an integer, it would be a boolean or an integer
+                    //if (parametertype.yesno == para.definition.parametertype)//if it is a boolean (0 or 1)
+                        if( para.Definition.GetDataType() == SpecTypeId.Boolean.YesNo)
+                    {
+                        //we must use true or false to represent the parameter instead of 0 or 1
+                        if (para.AsInteger() == 0)
+                            return defName + seperator + "False";
+                        else //para.AsInteger() == 1
+                            return defName + seperator + "True";
+                    }
+                    else //if it is an integer, just use AsInteger().ToString() to get the string value
+                    {
+                        return defName + seperator + para.AsInteger().ToString();
+                    }
+                case StorageType.String: //if it is a string, we can return it by AsString()
+                    return defName + seperator + para.AsString();
+                default:
+                    return "unknown parameter";
+            }
+        }
 
     }
 }
